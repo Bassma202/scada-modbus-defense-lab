@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  pump-simulator:
+    build: .
+    container_name: ics_pump_simulator
+    command: python3 src/pump_simulator.py
+    networks:
+      ics_internal:
+        ipv4_address: 172.28.0.10
+    expose:
+      - "5020"
+    restart: unless-stopped
+
+  security-gateway:
+    build: .
+    container_name: ics_security_gateway
+    command: python3 src/security_gateway.py
+    environment:
+      - TARGET_HOST=172.28.0.10
+      - TARGET_PORT=5020
+    ports:
+      - "5021:5021"
+    networks:
+      ics_internal:
+        ipv4_address: 172.28.0.20
+      ics_dmz:
+        ipv4_address: 172.29.0.20
+    depends_on:
+      - pump-simulator
+    restart: unless-stopped
+
+networks:
+  ics_internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+  ics_dmz:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
