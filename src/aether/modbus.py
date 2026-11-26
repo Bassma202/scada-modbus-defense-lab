@@ -91,7 +91,7 @@ class ModbusPLCServer:
         # FC 0x01: Read Coils
         if fc == 0x01 and len(pdu) == 5:
             addr, qty = struct.unpack(">HH", pdu[1:5])
-            coils = [self.state.pump_power, self.state.ventilation_open]
+            coils = self.state.read_coils_atomic()
             if addr + qty > len(coils) or qty == 0:
                 return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_ADDRESS)
             byte_val = 0
@@ -104,7 +104,7 @@ class ModbusPLCServer:
         # FC 0x03: Read Holding Registers (0=target_rpm, 1=operating_mode)
         if fc == 0x03 and len(pdu) == 5:
             addr, qty = struct.unpack(">HH", pdu[1:5])
-            regs = [self.state.target_rpm, self.state.operating_mode]
+            regs = self.state.read_holding_atomic()
             if addr + qty > len(regs) or qty == 0:
                 return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_ADDRESS)
             slice_regs = regs[addr : addr + qty]
@@ -113,9 +113,8 @@ class ModbusPLCServer:
 
         # FC 0x04: Read Input Registers (0=pressure, 1=temp*10, 2=flow, 3=alarm)
         if fc == 0x04 and len(pdu) == 5:
-            self.state.step_physics()
             addr, qty = struct.unpack(">HH", pdu[1:5])
-            regs = [self.state.pressure_psi, self.state.temperature_c_x10, self.state.flow_lpm, self.state.alarm_code]
+            regs = self.state.read_inputs_atomic()
             if addr + qty > len(regs) or qty == 0:
                 return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_ADDRESS)
             slice_regs = regs[addr : addr + qty]
@@ -127,30 +126,22 @@ class ModbusPLCServer:
             addr, val = struct.unpack(">HH", pdu[1:5])
             if val not in (0x0000, 0xFF00):
                 return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_VALUE)
-            bit = 1 if val == 0xFF00 else 0
-            if addr == 0:
-                self.state.pump_power = bit
-            elif addr == 1:
-                self.state.ventilation_open = bit
-            else:
+            if addr not in (0, 1):
                 return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_ADDRESS)
-            self.state.step_physics()
+            bit = 1 if val == 0xFF00 else 0
+            ok, _ = self.state.apply_coil_write(addr, bit)
+            if not ok:
+                return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_SERVER_DEVICE_FAILURE)
             return ModbusFrame(frame.transaction_id, 0, frame.unit_id, pdu).to_bytes()
 
         # FC 0x06: Write Single Register (0=target_rpm, 1=operating_mode)
         if fc == 0x06 and len(pdu) == 5:
             addr, val = struct.unpack(">HH", pdu[1:5])
-            if addr == 0:
-                if val > self.state.spec()["max_rpm_physical"]:
-                    return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_VALUE)
-                self.state.target_rpm = val
-            elif addr == 1:
-                if val > 3:
-                    return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_VALUE)
-                self.state.operating_mode = val
-            else:
+            if addr not in (0, 1):
                 return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_ADDRESS)
-            self.state.step_physics()
+            ok, _ = self.state.apply_register_write(addr, val)
+            if not ok:
+                return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_DATA_VALUE)
             return ModbusFrame(frame.transaction_id, 0, frame.unit_id, pdu).to_bytes()
 
         return build_exception_frame(frame.transaction_id, frame.unit_id, fc, EXC_ILLEGAL_FUNCTION)

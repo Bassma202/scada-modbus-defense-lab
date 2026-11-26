@@ -23,9 +23,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from aether.gateway import AetherSecurityGateway, ClientCredential, build_auth_envelope
-from aether.modbus import ModbusFrame, ModbusPLCServer
-from aether.process import OperatingMode, ProcessState
+from aether.gateway import AetherSecurityGateway, ClientCredential, build_auth_envelope  # noqa: E402
+from aether.modbus import ModbusFrame, ModbusPLCServer  # noqa: E402
+from aether.process import OperatingMode, ProcessState  # noqa: E402
 
 
 def send_tcp(port: int, data: bytes) -> bytes:
