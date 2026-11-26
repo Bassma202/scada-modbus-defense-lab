@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-11-26T01:49:48.741171+00:00",
+  "evidence_classification": "Genuine laboratory execution (real localhost TCP sockets)",
+  "three_tier_comparison": {
+    "tier1_unprotected_plc": {
+      "authorized_telemetry_ok": true,
+      "overspeed_blocked": false,
+      "unsafe_pump_trip_blocked": false,
+      "final_rpm": 4500,
+      "final_pump_power": 0
+    },
+    "tier2_protocol_filter_only": {
+      "authorized_telemetry_ok": true,
+      "overspeed_blocked": false,
+      "unsafe_pump_trip_blocked": false,
+      "final_rpm": 4500,
+      "final_pump_power": 0
+    },
+    "tier3_process_aware_gateway": {
+      "authorized_telemetry_ok": true,
+      "overspeed_blocked": true,
+      "unsafe_pump_trip_blocked": true,
+      "final_rpm": 1450,
+      "final_pump_power": 1
+    }
+  },
+  "latency_benchmark_ms": {
+    "sample_size": 200,
+    "measurement_boundary": "End-to-end localhost TCP client -> HMAC envelope -> AETHER Gateway -> PLC -> TCP response",
+    "p50_ms": 0.287,
+    "p95_ms": 0.499,
+    "p99_ms": 0.668,
+    "throughput_req_per_sec": 3131.2
+  },
+  "suricata_live_capture": {
+    "engine": "Suricata 7.0.8 RELEASE (Docker jasonish/suricata:7.0.8)",
+    "pcap_file": "evidence/aether_live_modbus.pcap",
+    "pcap_sha256": "d23fcc19b9ca5475a271db4a25d5a2c1a44f343ddbf1e105c7da325b79423647",
+    "pcap_bytes": 4318,
+    "packets_captured": 50,
+    "rules_loaded": 5,
+    "rules_failed": 0,
+    "alerts_triggered": 4,
+    "benign_fc03_false_alerts": 0,
+    "triggered_sids": [
+      2000001,
+      2000002,
+      2000003,
+      2000004
+    ],
+    "signatures": [
+      "AETHER ICS: Modbus Write Single Coil Command (FC 05 - Pump Trip Risk)",
+      "AETHER ICS: Modbus Write Single Register to Pump Setpoint (FC 06)",
+      "AETHER ICS: Modbus Diagnostics Function Query (FC 08)",
+      "AETHER ICS: Modbus Read Device Identification Probe (FC 43)"
+    ]
+  }
+}

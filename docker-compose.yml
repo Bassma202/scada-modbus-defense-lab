@@ -1,43 +1,17 @@
-version: '3.8'
-
 services:
-  pump-simulator:
+  aether-dashboard:
     build: .
-    container_name: ics_pump_simulator
-    command: python3 src/pump_simulator.py
-    networks:
-      ics_internal:
-        ipv4_address: 172.28.0.10
-    expose:
-      - "5020"
-    restart: unless-stopped
-
-  security-gateway:
-    build: .
-    container_name: ics_security_gateway
-    command: python3 src/security_gateway.py
-    environment:
-      - TARGET_HOST=172.28.0.10
-      - TARGET_PORT=5020
+    image: aether-ics:2.0.0
+    container_name: aether_dashboard
+    user: "1001:1001"
+    read_only: true
+    cap_drop:
+      - ALL
     ports:
-      - "5021:5021"
+      - "127.0.0.1:8001:8001"
     networks:
-      ics_internal:
-        ipv4_address: 172.28.0.20
-      ics_dmz:
-        ipv4_address: 172.29.0.20
-    depends_on:
-      - pump-simulator
-    restart: unless-stopped
+      - aether_dmz
 
 networks:
-  ics_internal:
+  aether_dmz:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/24
-  ics_dmz:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.29.0.0/24

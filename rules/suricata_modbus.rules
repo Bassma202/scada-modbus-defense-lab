@@ -1,45 +1,12 @@
-# ==============================================================================
-# Suricata OT / ICS Detection Rules for Modbus TCP Industrial Network
-# Author: Bassma Alaoui Sossey | Specialization: OT & Critical Infrastructure Security
-# Target Protocol: Modbus TCP (Port 502 / 5020 / 5021)
-# ==============================================================================
+# AETHER — Suricata 7 OT/ICS Modbus TCP Detection Rules (Validated via suricata -T & live PCAP)
+# MITRE ATT&CK for ICS mappings: T0888 (Remote System Info Discovery), T0855 (Unauthorized Command Message)
 
-# 1. Alert on Modbus Device Enumeration & Identification (Reconnaissance)
-alert modbus any any -> $HOME_NET [502,5020,5021] (msg:"ICS ALERT: Modbus Read Device Identification Probe (MEI Type 14)"; \
-    flow:established,to_server; \
-    modbus.function:43; \
-    classtype:attempted-recon; \
-    sid:1000001; rev:1; \
-    reference:url,attack.mitre.org/techniques/T0888/;)
+alert modbus any any -> any [502,5020,5021] (msg:"AETHER ICS: Modbus Read Device Identification Probe (FC 43)"; flow:to_server; modbus:function 43; classtype:attempted-recon; sid:2000001; rev:2; reference:url,attack.mitre.org/techniques/T0888/;)
 
-# 2. Alert on Diagnostic Function Code Execution
-alert modbus any any -> $HOME_NET [502,5020,5021] (msg:"ICS ALERT: Modbus Diagnostics Function (FC 08) Query"; \
-    flow:established,to_server; \
-    modbus.function:8; \
-    classtype:attempted-recon; \
-    sid:1000002; rev:1; \
-    reference:url,attack.mitre.org/techniques/T0888/;)
+alert modbus any any -> any [502,5020,5021] (msg:"AETHER ICS: Modbus Diagnostics Function Query (FC 08)"; flow:to_server; modbus:function 8; classtype:attempted-recon; sid:2000002; rev:2; reference:url,attack.mitre.org/techniques/T0888/;)
 
-# 3. Alert on Unauthorized Coil Write (Forced Stop / Trip)
-alert modbus any any -> $HOME_NET [502,5020,5021] (msg:"ICS SUSPICIOUS: Modbus Force Single Coil Write (FC 05) - Potential Tripping Attack"; \
-    flow:established,to_server; \
-    modbus.function:5; \
-    classtype:bad-unknown; \
-    sid:1000003; rev:1; \
-    reference:url,attack.mitre.org/techniques/T0855/;)
+alert modbus any any -> any [502,5020,5021] (msg:"AETHER ICS: Modbus Write Single Coil Command (FC 05 - Pump Trip Risk)"; flow:to_server; modbus:function 5; classtype:attempted-admin; sid:2000003; rev:2; reference:url,attack.mitre.org/techniques/T0855/;)
 
-# 4. Critical Alert: Modbus Holding Register Write (Pump Speed Override)
-alert modbus any any -> $HOME_NET [502,5020,5021] (msg:"ICS CRITICAL: Modbus Write Single Register (FC 06) to Holding Register 0x0000 (Pump RPM)"; \
-    flow:established,to_server; \
-    modbus.function:6; \
-    modbus.address:0; \
-    classtype:policy-violation; \
-    sid:1000004; rev:1; \
-    reference:url,attack.mitre.org/techniques/T0831/;)
+alert modbus any any -> any [502,5020,5021] (msg:"AETHER ICS: Modbus Write Single Register to Pump Setpoint (FC 06)"; flow:to_server; modbus:function 6; classtype:attempted-admin; sid:2000004; rev:2; reference:url,attack.mitre.org/techniques/T0855/;)
 
-# 5. Alert on Gateway Exception Response (DPI Dropped Malicious Packet)
-alert modbus $HOME_NET [502,5020,5021] -> any any (msg:"ICS DEFENSE: Modbus Gateway Exception Response (Code 0x04 - Policy Blocked)"; \
-    flow:established,to_client; \
-    content:"|86 04|"; \
-    classtype:successful-recon-limited; \
-    sid:1000005; rev:1;)
+alert modbus any any -> any [502,5020,5021] (msg:"AETHER ICS: Modbus Write Multiple Registers (FC 16)"; flow:to_server; modbus:function 16; classtype:attempted-admin; sid:2000005; rev:2; reference:url,attack.mitre.org/techniques/T0855/;)
